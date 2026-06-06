@@ -80,7 +80,11 @@ export function ConversationPanel() {
   const [grammarHint, setGrammarHint] = useState<GrammarHintType | null>(null);
   const [pronResult, setPronResult] = useState<PronunciationResult | null>(null);
   const [summary, setSummary] = useState<SessionSummary | null>(null);
-  const [scenes, setScenes] = useState<SceneInfo[]>([]);
+  const [scenes, setScenes] = useState<SceneInfo[]>([
+    { id: "interview", name: "Job Interview", name_zh: "面试练习", icon: "💼", difficulty: "medium" },
+    { id: "ordering", name: "Restaurant Ordering", name_zh: "餐厅点餐", icon: "🍽️", difficulty: "easy" },
+    { id: "meeting", name: "Business Meeting", name_zh: "商务会议", icon: "📊", difficulty: "hard" },
+  ]);
   const [currentSceneId, setCurrentSceneId] = useState("interview");
   const [showScenes, setShowScenes] = useState(false);
 
@@ -172,9 +176,10 @@ export function ConversationPanel() {
   const sceneBG = sceneBGs[sceneId] ?? sceneBGs.interview;
   const theme = themes.find(t => t.id === currentTheme) ?? themes[0];
   const themeBg = theme.bg;
+  const containerClass = `flex flex-col h-screen bg-gradient-to-b ${themeBg}`;
 
   return (
-    <div className={`flex flex-col h-screen bg-gradient-to-b ${themeBg}`}>
+    <div className={containerClass}>
       {/* ─── 顶部导航栏 ─── */}
       <header className="relative z-20 flex items-center justify-between px-5 py-3
                          bg-gray-900/80 backdrop-blur-xl border-b border-white/5">
@@ -231,8 +236,7 @@ export function ConversationPanel() {
                       <button
                         key={t.id}
                         onClick={() => { setCurrentTheme(t.id); setThemeOpen(false); }}
-                        className={`w-7 h-7 rounded-full ${t.accent} transition-all duration-200
-                          hover:scale-110 ${t.id === currentTheme ? "ring-2 ring-white/60 scale-110" : "opacity-70 hover:opacity-100"}`}
+                        className={`w-7 h-7 rounded-full ${t.accent} transition-all duration-200 hover:scale-110 ${t.id === currentTheme ? "ring-2 ring-white/60 scale-110" : "opacity-70 hover:opacity-100"}`}
                         title={t.name}
                       />
                     ))}
@@ -240,13 +244,12 @@ export function ConversationPanel() {
                 </motion.div>
               </>
             )}
+          </div>
         </div>
       </header>
-
       {/* ─── 主内容区 ─── */}
       <div className="flex-1 overflow-hidden flex flex-col">
         {!sessionActive ? (
-          /* ── 欢迎界面 ── */
           <div className="flex-1 flex flex-col items-center justify-center p-6">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -265,7 +268,6 @@ export function ConversationPanel() {
                 {scenes.find(s => s.id === sceneId)?.name_zh ?? "选择场景开始练习"}
               </p>
 
-              {/* 场景卡片选择 */}
               <div className="grid grid-cols-3 gap-3 mb-8">
                 {scenes.map((s) => (
                   <motion.button
@@ -303,12 +305,9 @@ export function ConversationPanel() {
             </motion.div>
           </div>
         ) : (
-          /* ── 对话界面 ── */
           <>
-            {/* 对话记录 */}
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 scroll-smooth">
               <AnimatePresence>
-                {/* 空状态 */}
                 {transcript.length === 0 && !currentLLMText && !interimText && (
                   <motion.div
                     initial={{ opacity: 0 }}
@@ -332,7 +331,6 @@ export function ConversationPanel() {
                     transition={{ duration: 0.3 }}
                     className="space-y-3"
                   >
-                    {/* 用户消息 */}
                     <div className="flex justify-end gap-2">
                       <div className={`max-w-[78%] rounded-2xl rounded-br-md px-4 py-2.5
                                        bg-gradient-to-br ${sceneGradient} border ${sceneBorder}`}>
@@ -344,7 +342,6 @@ export function ConversationPanel() {
                       </div>
                     </div>
 
-                    {/* AI 消息 */}
                     <div className="flex justify-start gap-2">
                       <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20
                                       border border-white/10 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -358,7 +355,6 @@ export function ConversationPanel() {
                   </motion.div>
                 ))}
 
-                {/* 用户正在说的内容 */}
                 {interimText && (
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 0.7 }} className="flex justify-end gap-2">
                     <div className="max-w-[78%] rounded-2xl px-4 py-2.5 bg-white/5 border border-white/10 italic">
@@ -370,7 +366,6 @@ export function ConversationPanel() {
                   </motion.div>
                 )}
 
-                {/* AI 正在回复 */}
                 {currentLLMText && (
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start gap-2">
                     <div className="w-8 h-8 rounded-xl bg-purple-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -385,20 +380,16 @@ export function ConversationPanel() {
               </AnimatePresence>
             </div>
 
-            {/* 发音评分 */}
             <PronunciationHeatmap result={pronResult} />
 
-            {/* 音频波形 */}
             <div className="mx-4 mb-1">
               <Card className="h-20 overflow-hidden bg-black/30 border-white/10 rounded-2xl">
                 <AudioVisualizer speaking={state === "USER_SPEAKING"} className="w-full h-full" />
               </Card>
             </div>
 
-            {/* 底部控制栏 */}
             <div className="flex items-center justify-center gap-3 px-4 py-3
                             bg-gradient-to-t from-gray-950 via-gray-900/90 to-transparent">
-              {/* 麦克风按钮 */}
               <motion.button
                 whileHover={{ scale: 1.08 }}
                 whileTap={{ scale: 0.92 }}
@@ -414,7 +405,6 @@ export function ConversationPanel() {
                 {mic.recording ? <Mic size={20} className="text-white" /> : <MicOff size={20} />}
               </motion.button>
 
-              {/* 打断按钮 */}
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -429,7 +419,6 @@ export function ConversationPanel() {
                 ✋ 打断
               </motion.button>
 
-              {/* 结束按钮 */}
               <motion.button
                 whileHover={{ scale: 1.08 }}
                 whileTap={{ scale: 0.92 }}
@@ -444,10 +433,8 @@ export function ConversationPanel() {
         )}
       </div>
 
-      {/* 语法提示浮层 */}
       <GrammarHint hint={grammarHint} onDismiss={() => setGrammarHint(null)} />
 
-      {/* 会话总结弹窗 */}
       <AnimatePresence>
         {summary && (
           <motion.div
