@@ -166,6 +166,13 @@ class LLMService:
 
     # ── 生命周期 ──────────────────────────────────────────────────────
 
+    def set_system_prompt(self, prompt: str) -> None:
+        """切换场景系统提示词，同时清空对话历史"""
+        self._system_prompt = prompt
+        self._history = []
+        self.full_response = ""
+        logger.info("系统提示词已切换，对话历史已清空")
+
     async def stop(self) -> None:
         """取消生成（用户打断）"""
         self._abort = True

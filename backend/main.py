@@ -29,10 +29,15 @@ from fastapi.responses import HTMLResponse
 
 from models import OrchestratorState, WSMsg
 from orchestrator import Orchestrator, OrchestratorEvent
+from scenes import SceneService
 from services.asr_service import ASRService
 from services.llm_service import LLMService
 from services.tts_service import TTSService
 from services.pronunciation_service import PronunciationService
+
+# ── 共享服务 ──────────────────────────────────────────────────────────
+
+scene_service = SceneService()
 
 # ── logging ──────────────────────────────────────────────────────────
 
@@ -86,17 +91,22 @@ async def speak_endpoint(ws: WebSocket):
     Server → Client: ASR, LLM tokens, TTS audio, grammar, pronunciation
     """
     await ws.accept()
-    logger.info("Client connected")
+    logger.info("客户端已连接")
+
+    # 使用默认场景的系统提示词
+    default_scene = scene_service.get_default()
+    default_prompt = default_scene.system_prompt if default_scene else ""
 
     orchestrator = Orchestrator()
     asr = ASRService()
-    llm = LLMService()
+    llm = LLMService(system_prompt=default_prompt)
     tts = TTSService()
     pronunciation = PronunciationService()
 
     session_alive = True
+    current_scene_id = default_scene.id if default_scene else "interview"
 
-    # ── helper: send JSON ──────────────────────────────────────────
+    # ── 辅助函数: 发送 JSON ──────────────────────────────────────────
 
     async def send(msg_type: str, data: dict | None = None) -> bool:
         nonlocal session_alive
@@ -110,7 +120,10 @@ async def speak_endpoint(ws: WebSocket):
             session_alive = False
             return False
 
-    # ── state change callback ───────────────────────────────────────
+    # 发送可用场景列表给客户端
+    await send(WSMsg.SCENE_LIST, {"scenes": scene_service.to_client_payload()})
+
+    # ── 状态变更回调 ─────────────────────────────────────────────────
 
     async def on_state_change(old, new, reason):
         await send(WSMsg.STATE_CHANGE, {
@@ -130,8 +143,23 @@ async def speak_endpoint(ws: WebSocket):
 
             orchestrator.session.message_count += 1
 
-            # ── START ─────────────────────────────────────────────
-            if msg_type == WSMsg.START_SESSION:
+            # ── 切换场景 ───────────────────────────────────────────
+            if msg_type == WSMsg.SET_SCENE:
+                scene_id = data.get("scene_id", "")
+                scene = scene_service.get(scene_id)
+                if scene:
+                    current_scene_id = scene_id
+                    llm.set_system_prompt(scene.system_prompt)
+                    logger.info(f"场景已切换: {scene.name}")
+                    await send(WSMsg.STATE_CHANGE, {
+                        "scene_id": scene_id,
+                        "greeting": scene.greeting,
+                    })
+                else:
+                    await send(WSMsg.ERROR, {"message": f"未知场景: {scene_id}"})
+
+            # ── 开始会话 ───────────────────────────────────────────
+            elif msg_type == WSMsg.START_SESSION:
                 await orchestrator.handle_event(OrchestratorEvent.SESSION_STARTED)
                 await send(WSMsg.STATE_CHANGE, {
                     "from": "IDLE", "to": "LISTENING", "reason": "started"

@@ -12,12 +12,13 @@ import { useAudioPlayer } from "@/hooks/useAudioPlayer";
 import { AudioVisualizer } from "./AudioVisualizer";
 import { GrammarHint } from "./GrammarHint";
 import { PronunciationHeatmap } from "./PronunciationHeatmap";
+import { SceneSelector } from "./SceneSelector";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 
 import type {
   OrchestratorState, GrammarHint as GrammarHintType,
-  PronunciationResult, SessionSummary,
+  PronunciationResult, SceneInfo, SessionSummary,
 } from "@/types";
 
 const WS_URL = "ws://localhost:8000/ws/speak";
@@ -33,11 +34,18 @@ export function ConversationPanel() {
   const [grammarHint, setGrammarHint] = useState<GrammarHintType | null>(null);
   const [pronResult, setPronResult] = useState<PronunciationResult | null>(null);
   const [summary, setSummary] = useState<SessionSummary | null>(null);
+  const [scenes, setScenes] = useState<SceneInfo[]>([]);
+  const [currentSceneId, setCurrentSceneId] = useState("interview");
 
   const ws = useWebSocket({
     url: WS_URL,
     onMessage: (msg) => {
       switch (msg.type) {
+        case "scene_list": {
+          const d = msg.data as unknown as { scenes: SceneInfo[] };
+          setScenes(d.scenes ?? []);
+          break;
+        }
         case "asr_result": {
           const d = msg.data as unknown as { text: string; is_final: boolean };
           if (d.is_final) setInterimText(""); else setInterimText(d.text);
@@ -80,6 +88,11 @@ export function ConversationPanel() {
 
   const player = useAudioPlayer();
 
+  const handleSceneSelect = useCallback((sceneId: string) => {
+    setCurrentSceneId(sceneId);
+    ws.send("set_scene", { scene_id: sceneId });
+  }, [ws]);
+
   const startSession = useCallback(() => {
     ws.connect();
     setTimeout(() => { ws.send("start_session"); setSessionActive(true); mic.start(); }, 300);
@@ -105,8 +118,15 @@ export function ConversationPanel() {
       {/* Header */}
       <header className="flex items-center justify-between p-4 border-b border-border">
         <div>
-          <h1 className="text-lg font-bold">🎤 AI Speaking Coach</h1>
-          <p className="text-xs text-muted-foreground">Interview Practice</p>
+          <h1 className="text-lg font-bold">🎤 AI 口语教练</h1>
+          <p className="text-xs text-muted-foreground">
+            <SceneSelector
+              scenes={scenes}
+              currentSceneId={currentSceneId}
+              onSelect={handleSceneSelect}
+              disabled={sessionActive}
+            />
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <span className={`w-2 h-2 rounded-full ${stateColor[state]} animate-pulse`} />

@@ -40,9 +40,11 @@ class WSMsg:
     AUDIO = "audio"
     VAD_EVENT = "vad_event"
     BARGE_IN = "barge_in"
+    SET_SCENE = "set_scene"
 
     # Server → Client
     ASR_RESULT = "asr_result"
+    SCENE_LIST = "scene_list"
     LLM_TOKEN = "llm_token"
     LLM_DONE = "llm_done"
     TTS_AUDIO = "tts_audio"
