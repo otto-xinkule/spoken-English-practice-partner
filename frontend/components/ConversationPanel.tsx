@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Mic, MicOff, PhoneOff, Play, Sparkles, MessageCircle,
-  ChevronDown, Waves, Bot, User, Volume2
+  ChevronDown, Waves, Bot, User, Volume2, Palette
 } from "lucide-react";
 
 import { useWebSocket } from "@/hooks/useWebSocket";
@@ -57,9 +57,21 @@ const sceneBGs: Record<string, string> = {
   meeting: "bg-emerald-500/10",
 };
 
+// ── 背景主题 ────────────────────────────────────────────────────────
+const themes = [
+  { id: "dark", name: "暗夜", bg: "from-gray-950 via-gray-900 to-gray-950", accent: "bg-violet-500", dot: "bg-violet-400" },
+  { id: "ocean", name: "深海", bg: "from-slate-950 via-blue-950 to-slate-950", accent: "bg-cyan-500", dot: "bg-cyan-400" },
+  { id: "forest", name: "森林", bg: "from-zinc-950 via-emerald-950 to-zinc-950", accent: "bg-emerald-500", dot: "bg-emerald-400" },
+  { id: "sunset", name: "日落", bg: "from-stone-950 via-rose-950 to-stone-950", accent: "bg-amber-500", dot: "bg-amber-400" },
+  { id: "aurora", name: "极光", bg: "from-indigo-950 via-purple-950 to-indigo-950", accent: "bg-fuchsia-500", dot: "bg-fuchsia-400" },
+  { id: "midnight", name: "午夜", bg: "from-neutral-950 via-neutral-900 to-neutral-950", accent: "bg-sky-500", dot: "bg-sky-400" },
+];
+
 export function ConversationPanel() {
   const [sessionActive, setSessionActive] = useState(false);
   const [state, setState] = useState<OrchestratorState>("IDLE");
+  const [currentTheme, setCurrentTheme] = useState("dark");
+  const [themeOpen, setThemeOpen] = useState(false);
   const [transcript, setTranscript] = useState<Array<{ user: string; ai: string }>>([]);
   const [currentLLMText, setCurrentLLMText] = useState("");
   const currentLLMTextRef = useRef("");
@@ -158,9 +170,11 @@ export function ConversationPanel() {
   const sceneBorder = sceneBorders[sceneId] ?? sceneBorders.interview;
   const sceneText = sceneTexts[sceneId] ?? sceneTexts.interview;
   const sceneBG = sceneBGs[sceneId] ?? sceneBGs.interview;
+  const theme = themes.find(t => t.id === currentTheme) ?? themes[0];
+  const themeBg = theme.bg;
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950">
+    <div className={`flex flex-col h-screen bg-gradient-to-b ${themeBg}`}>
       {/* ─── 顶部导航栏 ─── */}
       <header className="relative z-20 flex items-center justify-between px-5 py-3
                          bg-gray-900/80 backdrop-blur-xl border-b border-white/5">
@@ -191,6 +205,41 @@ export function ConversationPanel() {
               {scenes.find(s => s.id === sceneId)?.name ?? "面试练习"}
             </div>
           )}
+
+          {/* 主题切换 */}
+          <div className="relative">
+            <button
+              onClick={() => setThemeOpen(!themeOpen)}
+              className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center
+                         hover:bg-white/10 transition-colors"
+              title="切换背景"
+            >
+              <Palette size={15} className="text-gray-400" />
+            </button>
+            {themeOpen && (
+              <>
+                <div className="fixed inset-0 z-30" onClick={() => setThemeOpen(false)} />
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="absolute right-0 top-full mt-2 z-40 bg-gray-800/95 backdrop-blur-xl
+                             border border-white/10 rounded-2xl p-3 shadow-2xl"
+                >
+                  <p className="text-[10px] text-gray-500 mb-2 px-1">背景主题</p>
+                  <div className="flex gap-1.5">
+                    {themes.map((t) => (
+                      <button
+                        key={t.id}
+                        onClick={() => { setCurrentTheme(t.id); setThemeOpen(false); }}
+                        className={`w-7 h-7 rounded-full ${t.accent} transition-all duration-200
+                          hover:scale-110 ${t.id === currentTheme ? "ring-2 ring-white/60 scale-110" : "opacity-70 hover:opacity-100"}`}
+                        title={t.name}
+                      />
+                    ))}
+                  </div>
+                </motion.div>
+              </>
+            )}
         </div>
       </header>
 
