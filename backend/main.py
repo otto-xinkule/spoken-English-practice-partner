@@ -13,7 +13,15 @@ import asyncio
 import base64
 import json
 import logging
+import os
 from contextlib import asynccontextmanager
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
+if not os.getenv("DEEPSEEK_API_KEY") or os.getenv("DEEPSEEK_API_KEY") == "your_api_key_here":
+    logging.warning("DEEPSEEK_API_KEY 未配置，LLM 服务将使用模拟数据")
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
