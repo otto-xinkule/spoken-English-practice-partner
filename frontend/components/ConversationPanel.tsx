@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mic, MicOff, PhoneOff, Play } from "lucide-react";
 
@@ -27,6 +27,8 @@ export function ConversationPanel() {
   const [state, setState] = useState<OrchestratorState>("IDLE");
   const [transcript, setTranscript] = useState<Array<{ user: string; ai: string }>>([]);
   const [currentLLMText, setCurrentLLMText] = useState("");
+  const currentLLMTextRef = useRef("");
+  useEffect(() => { currentLLMTextRef.current = currentLLMText; }, [currentLLMText]);
   const [interimText, setInterimText] = useState("");
   const [grammarHint, setGrammarHint] = useState<GrammarHintType | null>(null);
   const [pronResult, setPronResult] = useState<PronunciationResult | null>(null);
@@ -46,7 +48,7 @@ export function ConversationPanel() {
           break;
         }
         case "llm_done": {
-          setTranscript((prev) => [...prev, { user: "[speech]", ai: currentLLMText }]);
+          setTranscript((prev) => [...prev, { user: "[speech]", ai: currentLLMTextRef.current }]);
           setCurrentLLMText("");
           break;
         }
