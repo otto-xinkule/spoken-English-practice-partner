@@ -14,6 +14,12 @@ export function useWebSocket({ url, onMessage, onStateChange }: UseWebSocketOpti
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // 用 ref 保存最新回调，避免 ws.onmessage 闭包过期
+  const onMessageRef = useRef(onMessage);
+  const onStateChangeRef = useRef(onStateChange);
+  onMessageRef.current = onMessage;
+  onStateChangeRef.current = onStateChange;
+
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
     const ws = new WebSocket(url);
@@ -23,15 +29,15 @@ export function useWebSocket({ url, onMessage, onStateChange }: UseWebSocketOpti
     ws.onmessage = (event) => {
       try {
         const msg: WSMessage = JSON.parse(event.data);
-        if (msg.type === "state_change" && onStateChange) {
-          onStateChange((msg.data as { to: OrchestratorState }).to);
+        if (msg.type === "state_change" && onStateChangeRef.current) {
+          onStateChangeRef.current((msg.data as { to: OrchestratorState }).to);
         }
-        onMessage?.(msg);
-      } catch { /* malformed */ }
+        onMessageRef.current?.(msg);
+      } catch { /* 无效消息 */ }
     };
     ws.onerror = () => setError("WebSocket error");
     ws.onclose = () => setReady(false);
-  }, [url, onMessage, onStateChange]);
+  }, [url]);
 
   const disconnect = useCallback(() => {
     wsRef.current?.close();

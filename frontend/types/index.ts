@@ -1,9 +1,13 @@
 /* ── Shared types for AI Speaking Coach ── */
 
 export type WSMessageType =
-  | "start_session" | "end_session" | "audio" | "vad_event" | "barge_in"
+  | "start_session" | "end_session" | "audio" | "vad_event" | "barge_in" | "set_scene"
   | "asr_result" | "llm_token" | "llm_done" | "tts_audio" | "tts_done"
-  | "pronunciation_result" | "grammar_hint" | "state_change" | "error" | "session_summary";
+  | "pronunciation_result" | "grammar_hint" | "state_change" | "error" | "session_summary" | "scene_list";
+
+export interface SceneInfo {
+  id: string; name: string; name_zh: string; icon: string; difficulty: string;
+}
 
 export interface WSMessage {
   type: WSMessageType;
