@@ -16,6 +16,8 @@ import { AudioVisualizer } from "./AudioVisualizer";
 import { GrammarHint } from "./GrammarHint";
 import { PronunciationHeatmap } from "./PronunciationHeatmap";
 import { SceneSelector } from "./SceneSelector";
+import dynamic from "next/dynamic";
+const SessionRadar = dynamic(() => import("./SessionRadar").then(m => ({ default: m.SessionRadar })), { ssr: false });
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 
@@ -464,6 +466,16 @@ export function ConversationPanel() {
                   </p>
                 </div>
               </div>
+
+              {/* 雷达图 + CEFR */}
+              {summary.radar_scores && (
+                <SessionRadar
+                  scores={summary.radar_scores}
+                  cefrLevel={summary.cefr_level}
+                  strengths={summary.strengths}
+                  weaknesses={summary.weaknesses}
+                />
+              )}
 
               {summary.grammar_errors.length > 0 && (
                 <div className="space-y-2 mb-4">

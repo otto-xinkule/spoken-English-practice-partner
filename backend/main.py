@@ -265,6 +265,14 @@ async def speak_endpoint(ws: WebSocket):
             # ── END SESSION ──────────────────────────────────────
             elif msg_type == WSMsg.END_SESSION:
                 await orchestrator.handle_event(OrchestratorEvent.SESSION_ENDED)
+
+                # 调用 LLM 生成雷达图评分 + CEFR + 优劣势
+                summary_analysis = await llm.generate_summary(
+                    transcript=orchestrator.session.transcript,
+                    grammar_errors=orchestrator.session.grammar_errors,
+                    pronunciation_scores=orchestrator.session.pronunciation_scores,
+                )
+
                 await send(WSMsg.SESSION_SUMMARY, {
                     "session_id": orchestrator.session.session_id,
                     "message_count": orchestrator.session.message_count,
@@ -272,6 +280,12 @@ async def speak_endpoint(ws: WebSocket):
                     "grammar_errors": orchestrator.session.grammar_errors,
                     "pronunciation_scores": orchestrator.session.pronunciation_scores,
                     "transcript": orchestrator.session.transcript,
+                    **({
+                        "radar_scores": summary_analysis["radar_scores"],
+                        "cefr_level": summary_analysis["cefr_level"],
+                        "strengths": summary_analysis["strengths"],
+                        "weaknesses": summary_analysis["weaknesses"],
+                    } if summary_analysis else {}),
                 })
                 break
 
