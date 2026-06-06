@@ -246,7 +246,8 @@ async def speak_endpoint(ws: WebSocket):
         await send(WSMsg.ERROR, {"message": "Internal server error"})
     finally:
         session_alive = False
-        await orchestrator.handle_event(OrchestratorEvent.SESSION_ENDED)
+        if orchestrator.current_state != OrchestratorState.IDLE:
+            await orchestrator.handle_event(OrchestratorEvent.SESSION_ENDED)
         logger.info("Session cleaned up")
 
 
