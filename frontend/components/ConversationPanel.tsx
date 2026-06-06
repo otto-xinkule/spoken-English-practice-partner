@@ -67,7 +67,7 @@ export function ConversationPanel() {
         case "session_summary":
           setSummary(msg.data as unknown as SessionSummary); break;
         case "error":
-          console.error("Server error:", msg.data); break;
+          console.error("服务器错误:", msg.data); break;
       }
     },
     onStateChange: (s) => setState(s),
@@ -105,8 +105,8 @@ export function ConversationPanel() {
   const bargeIn = useCallback(() => { ws.send("barge_in"); player.stop(); }, [ws, player]);
 
   const stateLabel: Record<OrchestratorState, string> = {
-    IDLE: "Ready", LISTENING: "Listening...", USER_SPEAKING: "You're speaking",
-    THINKING: "Thinking...", AI_SPEAKING: "AI speaking",
+    IDLE: "就绪", LISTENING: "正在听...", USER_SPEAKING: "你正在说话",
+    THINKING: "思考中...", AI_SPEAKING: "AI 说话中",
   };
   const stateColor: Record<OrchestratorState, string> = {
     IDLE: "bg-gray-500", LISTENING: "bg-green-500", USER_SPEAKING: "bg-blue-500",
@@ -180,7 +180,7 @@ export function ConversationPanel() {
       <div className="flex items-center justify-center gap-3 p-4">
         {!sessionActive ? (
           <Button size="lg" onClick={startSession} className="gap-2 rounded-full px-8">
-            <Play size={18} /> Start Interview
+            <Play size={18} /> 开始对话
           </Button>
         ) : (
           <>
@@ -191,7 +191,7 @@ export function ConversationPanel() {
             </Button>
             <Button size="lg" variant="outline" onClick={bargeIn}
               disabled={state !== "AI_SPEAKING"} className="rounded-full px-6">
-              ✋ Interrupt
+              ✋ 打断
             </Button>
             <Button size="lg" variant="destructive" onClick={endSession} className="rounded-full w-14 h-14">
               <PhoneOff size={22} />
@@ -212,12 +212,12 @@ export function ConversationPanel() {
             <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }}
               className="bg-card border border-border rounded-xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}>
-              <h2 className="text-xl font-bold">Session Summary</h2>
+              <h2 className="text-xl font-bold">会话总结</h2>
               <p className="text-sm text-muted-foreground mt-1">
-                Messages: {summary.message_count} · Barge-ins: {summary.barge_in_count}
+                消息数: {summary.message_count} · 打断次数: {summary.barge_in_count}
               </p>
               <div className="mt-3 space-y-1">
-                <p className="text-sm font-medium">Grammar Errors:</p>
+                <p className="text-sm font-medium">语法错误:</p>
                 {summary.grammar_errors.map((e, i) => (
                   <div key={i} className="text-xs bg-red-500/10 rounded p-2">
                     <span className="line-through text-red-300">{e.original}</span>
@@ -225,7 +225,7 @@ export function ConversationPanel() {
                   </div>
                 ))}
               </div>
-              <Button variant="outline" className="w-full mt-4" onClick={() => setSummary(null)}>Close</Button>
+              <Button variant="outline" className="w-full mt-4" onClick={() => setSummary(null)}>关闭</Button>
             </motion.div>
           </motion.div>
         )}

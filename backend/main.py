@@ -172,8 +172,11 @@ async def speak_endpoint(ws: WebSocket):
                 if result:
                     await send(WSMsg.ASR_RESULT, result)
 
-            # ── VAD EVENT ─────────────────────────────────────────
+            # ── 语音活动检测 ─────────────────────────────────────────
             elif msg_type == WSMsg.VAD_EVENT:
+                # 忽略会话开始前的 VAD 事件
+                if orchestrator.current_state == OrchestratorState.IDLE:
+                    continue
                 vad_status = data.get("status", "")
 
                 if vad_status == "speech_start":

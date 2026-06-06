@@ -19,7 +19,7 @@ export function PronunciationHeatmap({ result }: Props) {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
       className="p-4 bg-card/50 rounded-lg border border-border">
       <div className="flex items-center gap-2 mb-3">
-        <span className="text-sm font-medium">Pronunciation</span>
+        <span className="text-sm font-medium">发音评分</span>
         <span className="text-2xl font-bold text-primary">{result.pronunciation_score.toFixed(0)}</span>
         <span className="text-xs text-muted-foreground">/100</span>
       </div>
