@@ -30,11 +30,12 @@ _MOCK_RESPONSES = [
 class LLMService:
     """流式大模型服务，默认接入 DeepSeek，未配置密钥时使用模拟数据"""
 
-    def __init__(self) -> None:
+    def __init__(self, system_prompt: str = SYSTEM_PROMPT) -> None:
         self._abort = False
         self._history: list = []
         self.full_response: str = ""
         self._idx: int = 0
+        self._system_prompt = system_prompt
 
         api_key = os.getenv("DEEPSEEK_API_KEY", "")
         base_url = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
@@ -63,7 +64,7 @@ class LLMService:
                 yield token
             return
 
-        messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+        messages = [{"role": "system", "content": self._system_prompt}]
         messages.extend(self._history[-10:])
         messages.append({"role": "user", "content": user_text})
 
