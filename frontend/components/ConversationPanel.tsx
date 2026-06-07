@@ -16,6 +16,8 @@ import { AudioVisualizer } from "./AudioVisualizer";
 import { GrammarHint } from "./GrammarHint";
 import { PronunciationHeatmap } from "./PronunciationHeatmap";
 import { SceneSelector } from "./SceneSelector";
+import dynamic from "next/dynamic";
+const SessionRadar = dynamic(() => import("./SessionRadar").then(m => ({ default: m.SessionRadar })), { ssr: false });
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 
@@ -76,6 +78,7 @@ export function ConversationPanel() {
   const [currentLLMText, setCurrentLLMText] = useState("");
   const currentLLMTextRef = useRef("");
   useEffect(() => { currentLLMTextRef.current = currentLLMText; }, [currentLLMText]);
+  const lastUserTextRef = useRef("");
   const [interimText, setInterimText] = useState("");
   const [grammarHint, setGrammarHint] = useState<GrammarHintType | null>(null);
   const [pronResult, setPronResult] = useState<PronunciationResult | null>(null);
@@ -99,7 +102,8 @@ export function ConversationPanel() {
         }
         case "asr_result": {
           const d = msg.data as unknown as { text: string; is_final: boolean };
-          if (d.is_final) setInterimText(""); else setInterimText(d.text);
+          if (d.is_final) { setInterimText(""); lastUserTextRef.current = d.text ?? ""; }
+          else setInterimText(d.text);
           break;
         }
         case "llm_token": {
@@ -107,7 +111,7 @@ export function ConversationPanel() {
           break;
         }
         case "llm_done": {
-          setTranscript((prev) => [...prev, { user: "[speech]", ai: currentLLMTextRef.current }]);
+          setTranscript((prev) => [...prev, { user: lastUserTextRef.current, ai: currentLLMTextRef.current }]);
           setCurrentLLMText("");
           break;
         }
@@ -143,13 +147,16 @@ export function ConversationPanel() {
     setCurrentSceneId(sceneId);
   }, []);
 
-  const startSession = useCallback(() => {
+  const startSession = useCallback(async () => {
     ws.connect();
-    setTimeout(() => {
-      ws.send("start_session", { scene_id: currentSceneId });
-      setSessionActive(true);
-      mic.start();
-    }, 300);
+    // 等待 WebSocket 就绪（最多 5 秒，避免硬编码 300ms 竞态）
+    for (let i = 0; i < 100; i++) {
+      await new Promise((r) => setTimeout(r, 50));
+      if (ws.ready) break;
+    }
+    ws.send("start_session", { scene_id: currentSceneId });
+    setSessionActive(true);
+    mic.start();
   }, [ws, mic, currentSceneId]);
 
   const endSession = useCallback(() => {
@@ -464,6 +471,16 @@ export function ConversationPanel() {
                   </p>
                 </div>
               </div>
+
+              {/* 雷达图 + CEFR */}
+              {summary.radar_scores && (
+                <SessionRadar
+                  scores={summary.radar_scores}
+                  cefrLevel={summary.cefr_level}
+                  strengths={summary.strengths}
+                  weaknesses={summary.weaknesses}
+                />
+              )}
 
               {summary.grammar_errors.length > 0 && (
                 <div className="space-y-2 mb-4">

@@ -15,7 +15,7 @@ from typing import AsyncIterator, Dict, Optional
 
 from openai import AsyncOpenAI
 
-from prompts.interview_coach import SYSTEM_PROMPT, GRAMMAR_CHECK_PROMPT
+from prompts.interview_coach import SYSTEM_PROMPT, GRAMMAR_CHECK_PROMPT, SUMMARY_PROMPT
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +62,9 @@ class LLMService:
         if self._use_mock or self._client is None:
             async for token in self._mock_generate():
                 yield token
+            self._history.append({"role": "user", "content": user_text})
+            if self.full_response:
+                self._history.append({"role": "assistant", "content": self.full_response})
             return
 
         messages = [{"role": "system", "content": self._system_prompt}]
@@ -157,6 +160,84 @@ class LLMService:
         except json.JSONDecodeError:
             logger.warning(f"语法检查返回非 JSON 格式: {raw[:80]}")
             # 尝试提取第一个 JSON 对象
+            start = text.find("{")
+            if start != -1:
+                try:
+                    return json.loads(text[start:])
+                except json.JSONDecodeError:
+                    pass
+            return None
+
+    # ── 会话总结 ──────────────────────────────────────────────────────
+
+    async def generate_summary(
+        self,
+        transcript: list,
+        grammar_errors: list,
+        pronunciation_scores: list,
+    ) -> Optional[Dict]:
+        """调用 LLM 生成雷达图评分、CEFR 等级、优劣势"""
+        if self._use_mock or self._client is None:
+            return await self._mock_summary()
+
+        user_text = "\n".join(
+            f"User: {t.get('user', '')}\nCoach: {t.get('ai', '')}"
+            for t in transcript[-10:]  # 只用最近 10 轮
+        )
+        grammar_text = json.dumps(grammar_errors, ensure_ascii=False)
+        pron_text = json.dumps(pronunciation_scores, ensure_ascii=False)
+
+        prompt = SUMMARY_PROMPT.format(
+            transcript=user_text,
+            grammar_errors=grammar_text,
+            pronunciation_scores=pron_text,
+        )
+
+        try:
+            response = await self._client.chat.completions.create(
+                model=self._model,
+                messages=[{"role": "user", "content": prompt}],
+                response_format={"type": "json_object"},
+                temperature=0.3,
+                max_tokens=1000,
+            )
+            content = response.choices[0].message.content
+            if not content:
+                return await self._mock_summary()
+            result = self._parse_summary_json(content)
+            if result is None:
+                return await self._mock_summary()
+            return result
+        except Exception as e:
+            logger.error(f"生成总结失败: {e}")
+            return await self._mock_summary()
+
+    async def _mock_summary(self) -> Dict:
+        """无 API 时的模拟总结"""
+        await asyncio.sleep(0.1)
+        return {
+            "cefr_level": "B1",
+            "radar_scores": {
+                "fluency": 70, "grammar": 65, "vocabulary": 75,
+                "pronunciation": 68, "comprehension": 80, "confidence": 72,
+            },
+            "strengths": ["口语表达流畅", "理解能力强", "积极互动"],
+            "weaknesses": ["语法时态需加强", "部分词汇发音不标准"],
+        }
+
+    @staticmethod
+    def _parse_summary_json(raw: str) -> Optional[Dict]:
+        text = raw.strip()
+        for fence in ("```json", "```"):
+            if text.startswith(fence):
+                text = text[len(fence):].strip()
+                if text.endswith("```"):
+                    text = text[:-3].strip()
+                break
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError:
+            logger.warning(f"总结返回非 JSON: {raw[:80]}")
             start = text.find("{")
             if start != -1:
                 try:

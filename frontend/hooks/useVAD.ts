@@ -75,6 +75,7 @@ export function useVAD(
     processingRef.current = true;
 
     const session = await ensureSession();
+    const { Tensor } = session ? await import("onnxruntime-web") : { Tensor: null as any };
 
     while (queueRef.current.length > 0) {
       const frame = queueRef.current.shift()!;
@@ -82,7 +83,6 @@ export function useVAD(
 
       if (session) {
         // ── Silero ONNX 推理 ──
-        const { Tensor } = await import("onnxruntime-web");
         const input = new Tensor("float32", new Float32Array(frame), [
           1, FRAME_SIZE,
         ]);

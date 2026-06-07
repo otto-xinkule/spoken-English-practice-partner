@@ -94,7 +94,7 @@ class Orchestrator:
             return await self._handle_barge_in()
 
         if event == OrchestratorEvent.USER_STARTED_SPEAKING:
-            if self.state == OrchestratorState.AI_SPEAKING:
+            if self.state != OrchestratorState.LISTENING:
                 await self._handle_barge_in()
             return await self._transition(OrchestratorState.USER_SPEAKING, "user speaking")
 
