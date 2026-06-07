@@ -29,11 +29,16 @@ export function useWebSocket({ url, onMessage, onStateChange }: UseWebSocketOpti
     ws.onmessage = (event) => {
       try {
         const msg: WSMessage = JSON.parse(event.data);
-        if (msg.type === "state_change" && onStateChangeRef.current) {
-          onStateChangeRef.current((msg.data as { to: OrchestratorState }).to);
+        if (msg.type === "state_change" && onStateChangeRef.current && msg.data) {
+          const to = (msg.data as Record<string, unknown>).to;
+          if (to && typeof to === "string") {
+            onStateChangeRef.current(to as OrchestratorState);
+          }
         }
         onMessageRef.current?.(msg);
-      } catch { /* 无效消息 */ }
+      } catch (e) {
+        console.warn("[WS] 消息处理失败:", e);
+      }
     };
     ws.onerror = () => setError("WebSocket error");
     ws.onclose = () => setReady(false);

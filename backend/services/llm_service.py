@@ -62,6 +62,9 @@ class LLMService:
         if self._use_mock or self._client is None:
             async for token in self._mock_generate():
                 yield token
+            self._history.append({"role": "user", "content": user_text})
+            if self.full_response:
+                self._history.append({"role": "assistant", "content": self.full_response})
             return
 
         messages = [{"role": "system", "content": self._system_prompt}]

@@ -90,7 +90,7 @@ export function SessionRadar({
       )}
 
       {/* 优势 / 不足 */}
-      {(strengths?.length || weaknesses?.length) && (
+      {(strengths && strengths.length > 0 || weaknesses && weaknesses.length > 0) && (
         <div className="grid grid-cols-2 gap-3">
           {strengths && strengths.length > 0 && (
             <div>

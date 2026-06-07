@@ -277,9 +277,9 @@ async def speak_endpoint(ws: WebSocket):
                     "session_id": orchestrator.session.session_id,
                     "message_count": orchestrator.session.message_count,
                     "barge_in_count": orchestrator.session.barge_in_count,
-                    "grammar_errors": orchestrator.session.grammar_errors,
-                    "pronunciation_scores": orchestrator.session.pronunciation_scores,
-                    "transcript": orchestrator.session.transcript,
+                    "grammar_errors": list(orchestrator.session.grammar_errors),
+                    "pronunciation_scores": list(orchestrator.session.pronunciation_scores),
+                    "transcript": list(orchestrator.session.transcript),
                     **({
                         "radar_scores": summary_analysis["radar_scores"],
                         "cefr_level": summary_analysis["cefr_level"],
