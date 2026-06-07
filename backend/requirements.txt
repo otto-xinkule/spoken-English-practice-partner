@@ -6,3 +6,5 @@ httpx>=0.28
 openai>=1.58
 pydantic>=2.10
 python-multipart>=0.0.19
+# 阿里云智能语音交互（ASR + TTS，需 AccessKey）
+alibabacloud-nls-python-sdk
