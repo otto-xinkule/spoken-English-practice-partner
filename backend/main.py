@@ -190,7 +190,12 @@ async def speak_endpoint(ws: WebSocket):
                     )
 
                     # 1. Finalize ASR
-                    final = await asr.finalize()
+                    try:
+                        final = await asr.finalize()
+                    except Exception:
+                        logger.exception("ASR finalize 失败，跳过本次识别")
+                        await asr.reset()
+                        continue
                     final_text = final.get("text", "")
                     if final_text:
                         await send(WSMsg.ASR_RESULT, final)
