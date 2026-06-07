@@ -132,12 +132,20 @@ class ASRService:
             return await self._finalize_mock()
 
     async def _finalize_mock(self) -> Dict:
-        """降级 mock transcript."""
+        """降级 mock transcript — 轮播面试对话句"""
         await asyncio.sleep(0.1)
-        return {
-            "text": "[Mock] I've been working as a software engineer for about five years.",
-            "is_final": True,
-        }
+        mock_phrases = [
+            "Hello, I'm here for the job interview. Thank you for having me.",
+            "I've been working as a software engineer for about five years, mostly on backend systems.",
+            "My greatest achievement was leading a team that rebuilt our core platform from scratch.",
+            "I think my biggest strength is problem solving. I enjoy breaking down complex issues into manageable pieces.",
+            "In five years, I hope to be in a senior technical role, maybe mentoring junior developers.",
+            "Yes, I do have a question. What does the day-to-day work look like on your engineering team?",
+        ]
+        idx = getattr(self, "_mock_idx", 0)
+        setattr(self, "_mock_idx", (idx + 1) % len(mock_phrases))
+        text = mock_phrases[idx]
+        return {"text": text, "is_final": True}
 
     async def reset(self) -> None:
         """Clear buffers between utterances."""
